@@ -15,10 +15,10 @@ All notable changes to this project will be documented in this file.
 - **Config trực tiếp qua constructor**: Có thể pass config trực tiếp vào constructor
   ```javascript
   new CardAPI({
-    partnerKey: 'xxx',
-    partnerId: 'yyy',
-    domain: 'http://...'
-  })
+    partnerKey: "xxx",
+    partnerId: "yyy",
+    domain: "http://...",
+  });
   ```
 - **.env là optional**: Không bắt buộc phải có .env file
 - **Tăng tính scale**: Dễ dàng tạo nhiều instances với configs khác nhau
@@ -39,25 +39,28 @@ All notable changes to this project will be documented in this file.
 ### 📝 Migration Guide
 
 **Cách cũ (v1.x):**
+
 ```javascript
 // Bắt buộc phải có .env file
-require('dotenv').config();
+require("dotenv").config();
 const api = new CardAPI();
 ```
 
 **Cách mới (v2.x) - Khuyến nghị:**
+
 ```javascript
 // Config trực tiếp, không cần .env
 const api = new CardAPI({
-  partnerKey: 'your_key',
-  partnerId: 'your_id',
-  domain: 'http://api.example.com'
+  partnerKey: "your_key",
+  partnerId: "your_id",
+  domain: "http://api.example.com",
 });
 ```
 
 **Vẫn có thể dùng .env (backward compatible):**
+
 ```javascript
-require('dotenv').config();
+require("dotenv").config();
 const api = new CardAPI(); // Auto load from .env
 ```
 
@@ -66,6 +69,7 @@ const api = new CardAPI(); // Auto load from .env
 ## [1.0.1] - 2026-01-29
 
 ### 📖 Documentation
+
 - Cập nhật README với formatting tốt hơn
 - Thêm badges NPM
 - Cải thiện examples

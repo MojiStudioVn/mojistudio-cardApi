@@ -1,8 +1,9 @@
 {
   "name": "mojistudio-card-api",
-  "version": "2.0.0",
-  "description": "Card Partner API Client - Thư viện hỗ trợ các chức năng đổi thẻ, kiểm tra seri, mua thẻ, và nạp topup. Không cần .env, config trực tiếp, dễ scale.",
-  "main": "index.js",
+  "version": "3.0.0",
+  "description": "Card Partner API Client - Pure TypeScript, type-safe, no dependencies. Build request objects for Card Exchange, Serial Check, Buy Card, and Topup APIs.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "author": "MojiStudio <lephambinh05@gmail.com>",
   "license": "MIT",
   "keywords": [
@@ -13,9 +14,9 @@
     "payment",
     "vietnam",
     "telco",
-    "scalable",
-    "no-env",
-    "flexible-config"
+    "typescript",
+    "pure-functions",
+    "zero-dependencies"
   ],
   "repository": {
     "type": "git",
@@ -26,27 +27,23 @@
   },
   "homepage": "https://github.com/MojiStudioVn/mojistudio-cardApi#readme",
   "engines": {
-    "node": ">=10.0.0"
+    "node": ">=14.0.0"
   },
   "files": [
-    "index.js",
-    "cardApi.js",
-    "config.js",
-    ".env.example",
+    "dist",
     "README.md",
+    "CHANGELOG.md",
     "card-api.md"
   ],
-  "peerDependencies": {
-    "dotenv": "^10.0.0 || ^16.0.0"
-  },
-  "peerDependenciesMeta": {
-    "dotenv": {
-      "optional": true
-    }
-  },
   "scripts": {
-    "test": "node examples.js",
-    "setup": "cp .env.example .env && echo 'Created .env file. Please fill in your credentials.'",
-    "prepublishOnly": "echo 'Publishing to npm...'"
+    "build": "tsc",
+    "watch": "tsc --watch",
+    "clean": "node -e \"require('fs').rmSync('dist', {recursive: true, force: true})\"",
+    "prebuild": "npm run clean",
+    "prepublishOnly": "npm run build"
+  },
+  "devDependencies": {
+    "@types/node": "^25.1.0",
+    "typescript": "^5.0.0"
   }
 }

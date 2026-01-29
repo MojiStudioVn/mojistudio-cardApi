@@ -1,52 +1,356 @@
-# mojistudio-card-api
+# mojistudio-card-api v3
 
 [![npm version](https://img.shields.io/npm/v/mojistudio-card-api.svg)](https://www.npmjs.com/package/mojistudio-card-api)
 [![npm downloads](https://img.shields.io/npm/dm/mojistudio-card-api.svg)](https://www.npmjs.com/package/mojistudio-card-api)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue.svg)](https://www.typescriptlang.org)
 [![license](https://img.shields.io/npm/l/mojistudio-card-api.svg)](https://github.com/MojiStudioVn/mojistudio-cardApi/blob/main/LICENSE)
 
-Card Partner API Client - Thư viện Node.js hỗ trợ tích hợp API đổi thẻ cào, kiểm tra seri, mua thẻ, và nạp topup.
+**Pure TypeScript API client library** - Zero dependencies, type-safe, production-ready.
 
-## ✨ Tính năng
+Thư viện hỗ trợ tích hợp API đổi thẻ cào, kiểm tra seri, mua thẻ, và nạp topup. Viết 100% TypeScript, không dependency, mọi function đều pure functions.
 
-- ✅ **Đổi thẻ cào**: Gửi thẻ, kiểm tra trạng thái, nhận callback
-- ✅ **Kiểm tra seri**: Xác thực tính hợp lệ của seri thẻ
-- ✅ **Mua thẻ**: Mua thẻ cào, kiểm tra tồn kho, tải lại thẻ
-- ✅ **Nạp topup**: Tạo lệnh nạp, lấy trạng thái, quản lý sản phẩm
-- ✅ **Tự động tính chữ ký MD5**
-- ✅ **Hỗ trợ cấu hình linh hoạt qua .env**
-- ✅ **TypeScript ready**
+## ✨ Features
 
-## 📦 Cài đặt
+- 📘 **100% TypeScript** - Full type safety, IntelliSense
+- 🚀 **Zero Dependencies** - No node_modules bloat (only Node.js built-in crypto)
+- 🎯 **Pure Functions** - Request builders, no HTTP calls, no side effects
+- 📦 **Tree-shakeable** - Import only what you need
+- 💪 **Production Ready** - Fully tested, type-safe
+- 🔐 **Secure** - Built-in MD5 signature generation
+- 📚 **Well-documented** - JSDoc for every method
+
+## 📦 Installation
 
 ```bash
 npm install mojistudio-card-api
 ```
 
-## 🚀 Khởi động nhanh
+## 🚀 Quick Start
 
-### Cách 1: Truyền config trực tiếp (Khuyến nghị ⭐)
+### Create API Client
 
-**KHÔNG cần .env file!** Chỉ cần truyền config vào constructor:
+```typescript
+import { CardAPI } from "mojistudio-card-api";
 
-```javascript
-const { CardAPI } = require("mojistudio-card-api");
-
+// Create instance
 const api = new CardAPI({
   partnerKey: "your_partner_key",
   partnerId: "your_partner_id",
+  domain: "http://api.example.com", // or separate domains
+});
+```
+
+### Build Requests (No HTTP calls!)
+
+```typescript
+// Build a card submission request
+const request = api.buildSubmitCardRequest({
+  telco: "VIETTEL",
+  code: "312821445892982",
+  serial: "10004783347874",
+  amount: "50000",
+  requestId: "REQ" + Date.now(),
+});
+
+// Returns:
+// {
+//   path: "/api/charging",
+//   method: "POST",
+//   headers: { "Content-Type": "application/x-www-form-urlencoded" },
+//   body: "partner_id=xxx&telco=VIETTEL&code=...&signature=xxx",
+//   signature: "xxx"
+// }
+
+// You handle the HTTP request yourself:
+// - Use fetch, axios, node-fetch, whatever you prefer
+// - Send to: domain + request.path
+// - Include request headers
+// - Send request.body as POST data
+```
+
+## 📖 Configuration
+
+```typescript
+const api = new CardAPI({
+  partnerKey: "your_key", // Required
+  partnerId: "your_id", // Required
+  domain: "http://api.example.com", // Optional - common domain
+  domainPost: "...", // Optional - Card Exchange only
+  domainBuy: "...", // Optional - Buy Card only
+  domainTopup: "...", // Optional - Topup only
+  timeout: 30000, // Optional - default 30s
+});
+```
+
+**Priority**: Specific domain > Common domain
+
+```typescript
+// Example: Use one domain, but override topup
+const api = new CardAPI({
+  domain: "http://api.example.com",
+  domainTopup: "http://different-topup.com", // This takes priority
+});
+```
+
+## 📚 API Methods
+
+All methods return `APIRequest` object with:
+
+- `path`: API endpoint path
+- `method`: HTTP method (GET/POST)
+- `headers`: Required headers
+- `body`: Request body (for POST)
+- `signature`: Calculated signature
+
+### Card Exchange (ĐỔI THẺ)
+
+```typescript
+// Submit card for charging
+const req1 = api.buildSubmitCardRequest({
+  telco: "VIETTEL",
+  code: "312821445892982",
+  serial: "10004783347874",
+  amount: "50000",
+  requestId: "REQ001",
+});
+
+// Check card status
+const req2 = api.buildCheckCardStatusRequest({
+  telco: "VIETTEL",
+  code: "312821445892982",
+  serial: "10004783347874",
+  amount: "50000",
+  requestId: "REQ001",
+});
+
+// Get card prices
+const req3 = api.buildGetCardPricesRequest();
+```
+
+### Serial Check (KIỂM TRA SERI)
+
+```typescript
+const request = api.buildCheckSerialRequest({
+  telco: "VIETTEL",
+  serial: "20000203625855",
+});
+```
+
+### Buy Card (MUA THẺ)
+
+```typescript
+// Buy card
+const req1 = api.buildBuyCardRequest({
+  serviceCode: "Viettel",
+  walletNumber: "0081083966",
+  value: "10000",
+  qty: "2",
+  requestId: "BUY001",
+});
+
+// Check availability
+const req2 = api.buildCheckCardAvailabilityRequest({
+  serviceCode: "Viettel",
+  value: "10000",
+  qty: "2",
+});
+
+// Redownload card
+const req3 = api.buildRedownloadCardRequest({
+  requestId: "BUY001",
+  orderCode: "S61797A53BCEEF",
+});
+```
+
+### Topup (NẠP TOPUP)
+
+```typescript
+// Create topup order
+const req1 = api.buildCreateTopupOrderRequest({
+  serviceCode: "vinatt",
+  amount: "10000",
+  qty: "1",
+  requestId: "TOP001",
+  accountInfo: { phone: "0943793984" },
+});
+
+// Check topup status
+const req2 = api.buildGetTopupStatusRequest({
+  requestId: "TOP001",
+  orderCode: "R625931CC50F71",
+});
+
+// Get product list
+const req3 = api.buildGetProductListRequest();
+
+// Get balance
+const req4 = api.buildGetBalanceRequest();
+```
+
+## 🔧 Advanced Usage
+
+### Multiple Instances
+
+```typescript
+// Different environments
+const liveAPI = new CardAPI({
+  partnerKey: "live_key",
+  partnerId: "live_id",
+  domain: "https://api.production.com",
+});
+
+const testAPI = new CardAPI({
+  partnerKey: "test_key",
+  partnerId: "test_id",
+  domain: "https://api-test.staging.com",
+});
+
+// Different vendors
+const vendor1 = new CardAPI({
+  partnerKey: "vendor1_key",
+  partnerId: "vendor1_id",
+  domain: "https://vendor1-api.com",
+});
+```
+
+### Using with HTTP Client
+
+```typescript
+import fetch from "node-fetch"; // or axios, http-client, etc.
+
+const api = new CardAPI({
+  partnerKey: "xxx",
+  partnerId: "yyy",
   domain: "http://api.example.com",
 });
 
-// Sử dụng ngay
-async function main() {
-  const balance = await api.getBalance();
-  console.log("Số dư:", balance);
-}
+// Build request
+const req = api.buildSubmitCardRequest({
+  telco: "VIETTEL",
+  code: "xxx",
+  serial: "xxx",
+  amount: "50000",
+  requestId: "REQ001",
+});
 
-main();
+// Send with fetch (or any HTTP client)
+const response = await fetch(`${api.getDomain("post")}${req.path}`, {
+  method: req.method,
+  headers: req.headers,
+  body: req.body,
+  timeout: 30000,
+});
+
+const data = await response.json();
+console.log(data);
 ```
 
-### Cách 2: Dùng .env file (Tùy chọn)
+### Utility Functions
+
+```typescript
+import {
+  generateSignature,
+  buildSignature,
+  buildQueryString,
+  buildURL,
+} from "mojistudio-card-api";
+
+// Generate MD5 signature
+const sig = generateSignature("data_to_hash");
+
+// Build signature from parameters
+const sig2 = buildSignature(
+  {
+    partner_id: "xxx",
+    telco: "VIETTEL",
+    code: "xxx",
+  },
+  "partner_key",
+);
+
+// Build query string
+const qs = buildQueryString({
+  param1: "value1",
+  param2: "value2",
+});
+
+// Build full URL
+const url = buildURL("http://api.example.com", "/api/charging", {
+  partner_id: "xxx",
+});
+```
+
+## 🎯 Key Differences from v2
+
+### v2 (Old)
+
+```typescript
+// Had HTTP calls built-in
+const api = new CardAPI();
+const result = await api.submitCard({...}); // Made HTTP request
+```
+
+### v3 (New)
+
+```typescript
+// Pure functions - you control HTTP
+const api = new CardAPI({...});
+const request = api.buildSubmitCardRequest({...}); // Returns request object
+// You send the HTTP request yourself
+```
+
+### Benefits
+
+- ✅ **Framework agnostic** - Use with fetch, axios, http-client, etc.
+- ✅ **Better testing** - Mock at function level, no HTTP mocking needed
+- ✅ **More control** - Implement your own retry logic, logging, etc.
+- ✅ **Smaller package** - No HTTP client bloat
+- ✅ **Type safety** - Full TypeScript support
+
+## 🔒 Security
+
+- All signatures calculated with MD5
+- No external dependencies (only Node.js crypto)
+- Parameters validated before building requests
+- Configuration errors throw early
+
+## 📝 Error Handling
+
+```typescript
+try {
+  const request = api.buildSubmitCardRequest({
+    // Missing required parameter
+    telco: "VIETTEL",
+    code: "xxx",
+    // Missing: serial, amount, requestId
+  });
+} catch (error) {
+  console.error(error.message);
+  // "Missing required parameters: serial, amount, requestId"
+}
+```
+
+## 🧪 Examples
+
+See [examples](./examples.js) for complete usage examples.
+
+## 📄 API Documentation
+
+Full API documentation: [card-api.md](./card-api.md)
+
+## 🤝 Support
+
+- **GitHub Issues**: https://github.com/MojiStudioVn/mojistudio-cardApi/issues
+- **Email**: lephambinh05@gmail.com
+- **NPM**: https://www.npmjs.com/package/mojistudio-card-api
+
+## 📝 License
+
+MIT
+
+---
+
+Made with ❤️ by [MojiStudio](https://github.com/MojiStudioVn)
 
 Tạo file `.env` trong project của bạn:
 
