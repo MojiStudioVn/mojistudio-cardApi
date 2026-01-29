@@ -24,55 +24,92 @@ npm install mojistudio-card-api
 
 ## 🚀 Khởi động nhanh
 
-### 1. Tạo file `.env`
+### Cách 1: Truyền config trực tiếp (Khuyến nghị ⭐)
 
-```bash
-# Sao chép template
-cp node_modules/mojistudio-card-api/.env.example .env
-```
-
-Hoặc tạo file `.env` mới:
-
-```env
-PARTNER_KEY=your_partner_key_here
-PARTNER_ID=your_partner_id_here
-DOMAIN=http://api.example.com
-```
-
-### 2. Sử dụng trong code
+**KHÔNG cần .env file!** Chỉ cần truyền config vào constructor:
 
 ```javascript
 const { CardAPI } = require("mojistudio-card-api");
 
-// Tự động đọc từ .env
-const api = new CardAPI();
+const api = new CardAPI({
+  partnerKey: "your_partner_key",
+  partnerId: "your_partner_id",
+  domain: "http://api.example.com",
+});
 
-// Sử dụng API
+// Sử dụng ngay
 async function main() {
-  try {
-    // Lấy số dư
-    const balance = await api.getBalance();
-    console.log("Số dư:", balance);
-
-    // Kiểm tra seri thẻ
-    const result = await api.checkSerial({
-      telco: "VIETTEL",
-      serial: "20000203625855",
-    });
-    console.log("Kết quả:", result);
-  } catch (error) {
-    console.error("Lỗi:", error.message);
-  }
+  const balance = await api.getBalance();
+  console.log("Số dư:", balance);
 }
 
 main();
 ```
 
+### Cách 2: Dùng .env file (Tùy chọn)
+
+Tạo file `.env` trong project của bạn:
+
+```env
+PARTNER_KEY=your_partner_key_here
+PARTNER_ID=your_partner_id_here
+DOMAIN=http://api.example.com
+```
+
+Sau đó sử dụng:
+
+```javascript
+// Cài dotenv nếu chưa có
+// npm install dotenv
+
+require("dotenv").config();
+const { CardAPI } = require("mojistudio-card-api");
+
+// Tự động đọc từ .env
+const api = new CardAPI();
+```
+
+### Cách 3: Kết hợp .env + override
+
+```javascript
+require("dotenv").config();
+const { CardAPI } = require("mojistudio-card-api");
+
+// Đọc .env nhưng override một số config
+const api = new CardAPI({
+  domainTopup: "http://different-topup-api.com", // Override topup domain
+});
+```
+
 ## ⚙️ Cấu hình
 
-### Cách 1: Domain chung (Đơn giản nhất)
+### ✨ Linh hoạt - 3 cách config
 
-Sử dụng 1 domain cho tất cả các API:
+#### 1️⃣ Config trực tiếp - Không cần .env (Đơn giản nhất)
+
+```javascript
+const api = new CardAPI({
+  partnerKey: "your_key",
+  partnerId: "your_id",
+  domain: "http://api.example.com", // Domain chung
+});
+```
+
+#### 2️⃣ Domain riêng cho từng chức năng
+
+```javascript
+const api = new CardAPI({
+  partnerKey: "your_key",
+  partnerId: "your_id",
+  domainPost: "http://card-exchange-api.com", // Đổi thẻ
+  domainBuy: "https://buy-card-api.com", // Mua thẻ
+  domainTopup: "http://topup-api.com", // Nạp topup
+});
+```
+
+#### 3️⃣ Dùng .env (Optional)
+
+Tạo `.env` trong project:
 
 ```env
 PARTNER_KEY=your_partner_key_here
@@ -80,33 +117,46 @@ PARTNER_ID=your_partner_id_here
 DOMAIN=http://api.example.com
 ```
 
-### Cách 2: Domain riêng cho từng chức năng
-
-Nếu mỗi chức năng sử dụng domain khác nhau:
-
-```env
-PARTNER_KEY=your_partner_key_here
-PARTNER_ID=your_partner_id_here
-DOMAIN_POST=http://card-exchange-api.com
-DOMAIN_BUY=https://buy-card-api.com
-DOMAIN_TOPUP=http://topup-api.com
+```javascript
+require("dotenv").config();
+const api = new CardAPI(); // Auto load from .env
 ```
 
-### Cách 3: Override một phần
+### 🎯 Scale với nhiều instances
 
-```env
-PARTNER_KEY=your_partner_key_here
-PARTNER_ID=your_partner_id_here
-DOMAIN=http://api.example.com
-DOMAIN_TOPUP=http://different-topup-api.com  # Chỉ override Topup
-```
+```javascript
+// API cho môi trường LIVE
+const liveAPI = new CardAPI({
+  partnerKey: "live_key",
+  partnerId: "live_id",
+  domain: "https://api.production.com",
+});
 
-### Cấu hình nâng cao (Tùy chọn)
+// API cho môi trường TEST
+const testAPI = new CardAPI({
+  partnerKey: "test_key",
+  partnerId: "test_id",
+  domain: "https://api-test.staging.com",
+});
 
-```env
-REQUEST_TIMEOUT=30000       # Timeout (ms)
-NODE_ENV=production         # Môi trường
-LOG_LEVEL=info             # Log level
+// API riêng cho từng vendor
+const vendor1API = new CardAPI({
+  partnerKey: "vendor1_key",
+  partnerId: "vendor1_id",
+  domain: "https://vendor1-api.com",
+});
+
+const vendor2API = new CardAPI({
+  partnerKey: "vendor2_key",
+  partnerId: "vendor2_id",
+  domain: "https://vendor2-api.com",
+});
+
+// Dùng song song
+const [balance1, balance2] = await Promise.all([
+  vendor1API.getBalance(),
+  vendor2API.getBalance(),
+]);
 ```
 
 ## 📖 API Methods
@@ -224,6 +274,22 @@ const topupAPI = new CardAPI({
   partnerId: "id3",
   domainTopup: "http://topup-api.com",
 });
+
+// Sử dụng từng API riêng
+await cardExchangeAPI.submitCard({...});
+await buyCardAPI.buyCard({...});
+await topupAPI.createTopupOrder({...});
+```
+
+### Config với timeout tùy chỉnh
+
+```javascript
+const api = new CardAPI({
+  partnerKey: "your_key",
+  partnerId: "your_id",
+  domain: "http://api.example.com",
+  timeout: 60000, // 60 seconds
+});
 ```
 
 ### Xử lý lỗi
@@ -239,10 +305,15 @@ try {
   });
   console.log("Success:", result);
 } catch (error) {
-  if (error.statusCode) {
+  if (error.message.includes("Configuration Error")) {
+    console.error("Config lỗi:", error.message);
+    // Fix config và retry
+  } else if (error.statusCode) {
     console.error("HTTP Error:", error.statusCode);
+  } else {
+    console.error("Error:", error.message);
   }
-  console.error("Message:", error.message);
+
   if (error.response) {
     console.error("Response:", error.response);
   }

@@ -1,7 +1,7 @@
 {
   "name": "mojistudio-card-api",
-  "version": "1.0.1",
-  "description": "Card Partner API Client - Thư viện hỗ trợ các chức năng đổi thẻ, kiểm tra seri, mua thẻ, và nạp topup",
+  "version": "2.0.0",
+  "description": "Card Partner API Client - Thư viện hỗ trợ các chức năng đổi thẻ, kiểm tra seri, mua thẻ, và nạp topup. Không cần .env, config trực tiếp, dễ scale.",
   "main": "index.js",
   "author": "MojiStudio <lephambinh05@gmail.com>",
   "license": "MIT",
@@ -12,7 +12,10 @@
     "api-client",
     "payment",
     "vietnam",
-    "telco"
+    "telco",
+    "scalable",
+    "no-env",
+    "flexible-config"
   ],
   "repository": {
     "type": "git",
@@ -33,8 +36,13 @@
     "README.md",
     "card-api.md"
   ],
-  "dependencies": {
-    "dotenv": "^10.0.0"
+  "peerDependencies": {
+    "dotenv": "^10.0.0 || ^16.0.0"
+  },
+  "peerDependenciesMeta": {
+    "dotenv": {
+      "optional": true
+    }
   },
   "scripts": {
     "test": "node examples.js",

@@ -5,24 +5,59 @@ const config = require("./config");
 class CardAPI {
   /**
    * Constructor
-   * @param {Object} options - Tùy chỉnh cấu hình
+   * @param {Object} options - Configuration options
+   * @param {string} options.partnerKey - Partner key (required)
+   * @param {string} options.partnerId - Partner ID (required)
+   * @param {string} options.domain - Common domain for all APIs (optional if specific domains provided)
+   * @param {string} options.domainPost - Domain for card exchange APIs (optional)
+   * @param {string} options.domainBuy - Domain for buy card APIs (optional)
+   * @param {string} options.domainTopup - Domain for topup APIs (optional)
+   * @param {number} options.timeout - Request timeout in ms (default: 30000)
    */
   constructor(options = {}) {
-    // Validate config từ .env
-    try {
-      config.validate();
-    } catch (error) {
-      console.error(error.message);
-      process.exit(1);
-    }
-
-    // Override with custom options
+    // Merge with config from .env (if exists)
     this.partnerKey = options.partnerKey || config.partnerKey;
     this.partnerId = options.partnerId || config.partnerId;
-    this.domainPost = options.domainPost || config.domainPost;
-    this.domainBuy = options.domainBuy || config.domainBuy;
-    this.domainTopup = options.domainTopup || config.domainTopup;
-    this.timeout = options.timeout || config.requestTimeout;
+
+    // Domain configuration
+    const baseDomain = options.domain || config.domain;
+    this.domainPost = options.domainPost || config.domainPost || baseDomain;
+    this.domainBuy = options.domainBuy || config.domainBuy || baseDomain;
+    this.domainTopup = options.domainTopup || config.domainTopup || baseDomain;
+
+    this.timeout = options.timeout || config.requestTimeout || 30000;
+
+    // Validate required fields
+    this._validate();
+  }
+
+  /**
+   * Validate configuration
+   * @private
+   */
+  _validate() {
+    const errors = [];
+
+    if (!this.partnerKey) {
+      errors.push("partnerKey is required");
+    }
+    if (!this.partnerId) {
+      errors.push("partnerId is required");
+    }
+    if (!this.domainPost && !this.domainBuy && !this.domainTopup) {
+      errors.push(
+        "At least one domain must be configured (domain, domainPost, domainBuy, or domainTopup)",
+      );
+    }
+
+    if (errors.length > 0) {
+      throw new Error(
+        `CardAPI Configuration Error:\n${errors.map((e) => `  - ${e}`).join("\n")}\n\n` +
+          `Please provide config via:\n` +
+          `  1. Constructor: new CardAPI({ partnerKey: 'xxx', partnerId: 'yyy', domain: 'http://...' })\n` +
+          `  2. Environment variables (.env file)`,
+      );
+    }
   }
 
   /**

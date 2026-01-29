@@ -1,18 +1,22 @@
-require("dotenv").config();
+// Load .env if exists (optional)
+try {
+  require("dotenv").config();
+} catch (e) {
+  // .env is optional, continue without it
+}
 
 /**
- * Cấu hình ứng dụng
- * Tự động đọc từ file .env
+ * Default configuration from environment variables
+ * This is optional - you can pass config directly to CardAPI constructor
  */
-
 const config = {
   // API Configuration
   partnerKey: process.env.PARTNER_KEY,
   partnerId: process.env.PARTNER_ID,
 
-  // Domain - hỗ trợ 2 cách:
-  // 1. Nếu chỉ có DOMAIN: dùng chung cho tất cả
-  // 2. Nếu có DOMAIN_POST, DOMAIN_BUY: dùng riêng cho từng chức năng
+  // Domain - supports 2 modes:
+  // 1. Single DOMAIN for all APIs
+  // 2. Separate DOMAIN_POST, DOMAIN_BUY, DOMAIN_TOPUP
   domain: process.env.DOMAIN,
   domainPost: process.env.DOMAIN_POST || process.env.DOMAIN,
   domainBuy: process.env.DOMAIN_BUY || process.env.DOMAIN,
@@ -24,43 +28,6 @@ const config = {
   // Environment
   environment: process.env.NODE_ENV || "development",
   logLevel: process.env.LOG_LEVEL || "info",
-
-  // Helper method để validate config
-  validate() {
-    const errors = [];
-
-    if (!this.partnerKey) {
-      errors.push("PARTNER_KEY không được để trống");
-    }
-    if (!this.partnerId) {
-      errors.push("PARTNER_ID không được để trống");
-    }
-    if (!this.domain && !this.domainPost && !this.domainBuy) {
-      errors.push("DOMAIN hoặc DOMAIN_POST/DOMAIN_BUY không được để trống");
-    }
-
-    if (errors.length > 0) {
-      throw new Error(
-        `Cấu hình không hợp lệ:\n${errors.join("\n")}\n\nVui lòng kiểm tra file .env`,
-      );
-    }
-
-    return true;
-  },
-
-  // Helper method để display config (không hiển thị key)
-  display() {
-    return {
-      environment: this.environment,
-      partnerId: this.partnerId,
-      domain: this.domain || "(không thiết lập)",
-      domainPost: this.domainPost,
-      domainBuy: this.domainBuy,
-      domainTopup: this.domainTopup,
-      requestTimeout: this.requestTimeout,
-      logLevel: this.logLevel,
-    };
-  },
 };
 
 module.exports = config;
