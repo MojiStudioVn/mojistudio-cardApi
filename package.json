@@ -1,6 +1,6 @@
 {
   "name": "mojistudio-card-api",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Card Partner API Client - Thư viện hỗ trợ các chức năng đổi thẻ, kiểm tra seri, mua thẻ, và nạp topup",
   "main": "index.js",
   "author": "MojiStudio <lephambinh05@gmail.com>",
