@@ -290,17 +290,17 @@ app.listen(3000, () => console.log("Callback server running on port 3000"));
 
 ## 📋 Biến môi trường
 
-| BIẾN            | MỤC ĐÍCH                          | BẮT BUỘC | VÍ DỤ                  |
-| --------------- | --------------------------------- | -------- | ---------------------- |
-| PARTNER_KEY     | Partner key từ nhà cung cấp       | ✅       | your_key_here          |
-| PARTNER_ID      | Partner ID                        | ✅       | your_id_here           |
-| DOMAIN          | Domain chung cho tất cả API       | ⚠️       | http://api.example.com |
-| DOMAIN_POST     | Domain riêng cho ĐỔI THẺ         | ❌       | http://card-api.com    |
-| DOMAIN_BUY      | Domain riêng cho MUA THẺ          | ❌       | https://buy-api.com    |
-| DOMAIN_TOPUP    | Domain riêng cho NẠP TOPUP        | ❌       | http://topup-api.com   |
-| REQUEST_TIMEOUT | Timeout request (ms)              | ❌       | 30000                  |
-| NODE_ENV        | Môi trường (dev/production)       | ❌       | production             |
-| LOG_LEVEL       | Mức độ log (error/warn/info/debug)| ❌       | info                   |
+| BIẾN            | MỤC ĐÍCH                           | BẮT BUỘC | VÍ DỤ                  |
+| --------------- | ---------------------------------- | -------- | ---------------------- |
+| PARTNER_KEY     | Partner key từ nhà cung cấp        | ✅       | your_key_here          |
+| PARTNER_ID      | Partner ID                         | ✅       | your_id_here           |
+| DOMAIN          | Domain chung cho tất cả API        | ⚠️       | http://api.example.com |
+| DOMAIN_POST     | Domain riêng cho ĐỔI THẺ           | ❌       | http://card-api.com    |
+| DOMAIN_BUY      | Domain riêng cho MUA THẺ           | ❌       | https://buy-api.com    |
+| DOMAIN_TOPUP    | Domain riêng cho NẠP TOPUP         | ❌       | http://topup-api.com   |
+| REQUEST_TIMEOUT | Timeout request (ms)               | ❌       | 30000                  |
+| NODE_ENV        | Môi trường (dev/production)        | ❌       | production             |
+| LOG_LEVEL       | Mức độ log (error/warn/info/debug) | ❌       | info                   |
 
 ⚠️ **Lưu ý**: Cần có ít nhất **DOMAIN** HOẶC **(DOMAIN_POST + DOMAIN_BUY + DOMAIN_TOPUP)**
 
