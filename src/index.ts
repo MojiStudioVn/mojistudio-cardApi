@@ -2,9 +2,23 @@
  * Entry point - Export all public APIs
  */
 
-export { CardAPI, default } from "./cardApi";
+export { CardAPIConfig } from "./cardApi";
+export {
+  SubmitCardRequest,
+  CheckCardStatusRequest,
+  GetCardPricesRequest,
+  CheckSerialRequest,
+  BuyCardRequest,
+  CheckCardAvailabilityRequest,
+  RedownloadCardRequest,
+  CreateTopupOrderRequest,
+  GetTopupStatusRequest,
+  GetProductListRequest,
+  GetBalanceRequest,
+} from "./cardApi";
+
 export type {
-  CardAPIConfig,
+  CardAPIConfig as ICardAPIConfig,
   SubmitCardParams,
   CheckCardStatusParams,
   CheckSerialParams,
@@ -19,10 +33,5 @@ export type {
   APIResponse,
 } from "./types";
 
-export {
-  generateSignature,
-  buildSignature,
-  buildQueryString,
-  buildURL,
-} from "./utils";
+export { generateSignature, buildSignature, buildQueryString, buildURL } from "./utils";
 export { validateConfig, resolveDomain, defaultConfig } from "./config";

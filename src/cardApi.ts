@@ -1,11 +1,10 @@
 /**
- * Card API Client - Pure TypeScript Implementation
- * No external dependencies (except crypto, which is Node.js built-in)
- * All functions are pure - they only accept parameters and return values
+ * Card API Client - Pure OOP TypeScript Implementation
+ * Each request type is a class with constructor - easy to instantiate and reuse
  */
 
 import type {
-  CardAPIConfig,
+  CardAPIConfig as ICardAPIConfig,
   SubmitCardParams,
   CheckCardStatusParams,
   CheckSerialParams,
@@ -23,45 +22,76 @@ import { validateConfig, resolveDomain, defaultConfig } from "./config";
 import { buildSignature, validateParams, formatParams, buildQueryString } from "./utils";
 
 /**
- * Card API Client
- * Pure functions - no HTTP calls, no external state
- * All methods return request objects or formatted data
+ * Base configuration class
  */
-export class CardAPI {
-  private config: CardAPIConfig;
+export class CardAPIConfig {
+  readonly partnerKey: string;
+  readonly partnerId: string;
+  readonly domainPost: string;
+  readonly domainBuy: string;
+  readonly domainTopup: string;
+  readonly timeout: number;
 
-  /**
-   * Create a new CardAPI instance
-   * @param config Configuration object
-   */
-  constructor(config: CardAPIConfig) {
-    // Merge with defaults
-    this.config = { ...defaultConfig, ...config };
+  constructor(config: ICardAPIConfig) {
+    this.partnerKey = config.partnerKey;
+    this.partnerId = config.partnerId;
+    this.timeout = config.timeout || 30000;
 
-    // Validate configuration
-    validateConfig(this.config);
+    validateConfig(config);
+
+    const domain = config.domain || "";
+    this.domainPost = config.domainPost || domain;
+    this.domainBuy = config.domainBuy || domain;
+    this.domainTopup = config.domainTopup || domain;
   }
 
-  /**
-   * Get current configuration (safe - doesn't expose partnerKey)
-   */
-  getConfig(): Omit<CardAPIConfig, "partnerKey"> {
-    const { partnerKey, ...safeConfig } = this.config;
-    return safeConfig;
+  getDomain(operation: "post" | "buy" | "topup"): string {
+    switch (operation) {
+      case "post":
+        return this.domainPost;
+      case "buy":
+        return this.domainBuy;
+      case "topup":
+        return this.domainTopup;
+      default:
+        return this.domainPost;
+    }
+  }
+}
+
+/**
+ * Base Request class
+ */
+abstract class BaseRequest {
+  protected config: CardAPIConfig;
+  protected params: Record<string, any>;
+
+  constructor(config: CardAPIConfig, params: Record<string, any>) {
+    this.config = config;
+    this.params = params;
   }
 
-  // ============================================
-  // CARD EXCHANGE (ĐỔI THẺ)
-  // ============================================
+  protected buildBody(data: Record<string, any>): string {
+    return buildQueryString(data);
+  }
 
-  /**
-   * Build request for submitting a card
-   */
-  buildSubmitCardRequest(params: SubmitCardParams): APIRequest {
+  abstract getRequest(): APIRequest;
+}
+
+// ============================================
+// CARD EXCHANGE (ĐỔI THẺ) - REQUEST CLASSES
+// ============================================
+
+/**
+ * Submit Card Request
+ * Usage: new SubmitCardRequest(config, params).getRequest()
+ */
+export class SubmitCardRequest extends BaseRequest {
+  constructor(config: CardAPIConfig, params: SubmitCardParams) {
     validateParams(params, ["telco", "code", "serial", "amount", "requestId"]);
 
     const formatted = formatParams({
-      partner_id: this.config.partnerId,
+      partner_id: config.partnerId,
       telco: params.telco,
       code: params.code,
       serial: params.serial,
@@ -70,15 +100,19 @@ export class CardAPI {
       command: params.command || "charging",
     });
 
+    super(config, formatted);
+  }
+
+  getRequest(): APIRequest {
     const signature = buildSignature(
       {
-        partner_id: formatted.partner_id,
-        telco: formatted.telco,
-        code: formatted.code,
-        serial: formatted.serial,
-        amount: formatted.amount,
-        request_id: formatted.request_id,
-        command: formatted.command,
+        partner_id: this.params.partner_id,
+        telco: this.params.telco,
+        code: this.params.code,
+        serial: this.params.serial,
+        amount: this.params.amount,
+        request_id: this.params.request_id,
+        command: this.params.command,
       },
       this.config.partnerKey,
     );
@@ -89,22 +123,25 @@ export class CardAPI {
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
       },
-      body: buildQueryString({
-        ...formatted,
+      body: this.buildBody({
+        ...this.params,
         signature,
       }),
       signature,
     };
   }
+}
 
-  /**
-   * Build request for checking card status
-   */
-  buildCheckCardStatusRequest(params: CheckCardStatusParams): APIRequest {
+/**
+ * Check Card Status Request
+ * Usage: new CheckCardStatusRequest(config, params).getRequest()
+ */
+export class CheckCardStatusRequest extends BaseRequest {
+  constructor(config: CardAPIConfig, params: CheckCardStatusParams) {
     validateParams(params, ["telco", "code", "serial", "amount", "requestId"]);
 
     const formatted = formatParams({
-      partner_id: this.config.partnerId,
+      partner_id: config.partnerId,
       telco: params.telco,
       code: params.code,
       serial: params.serial,
@@ -113,15 +150,19 @@ export class CardAPI {
       command: params.command || "getcharge",
     });
 
+    super(config, formatted);
+  }
+
+  getRequest(): APIRequest {
     const signature = buildSignature(
       {
-        partner_id: formatted.partner_id,
-        telco: formatted.telco,
-        code: formatted.code,
-        serial: formatted.serial,
-        amount: formatted.amount,
-        request_id: formatted.request_id,
-        command: formatted.command,
+        partner_id: this.params.partner_id,
+        telco: this.params.telco,
+        code: this.params.code,
+        serial: this.params.serial,
+        amount: this.params.amount,
+        request_id: this.params.request_id,
+        command: this.params.command,
       },
       this.config.partnerKey,
     );
@@ -132,27 +173,34 @@ export class CardAPI {
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
       },
-      body: buildQueryString({
-        ...formatted,
+      body: this.buildBody({
+        ...this.params,
         signature,
       }),
       signature,
     };
   }
+}
 
-  /**
-   * Build request for getting card prices
-   */
-  buildGetCardPricesRequest(params: GetProductListParams = {}): APIRequest {
+/**
+ * Get Card Prices Request
+ * Usage: new GetCardPricesRequest(config).getRequest()
+ */
+export class GetCardPricesRequest extends BaseRequest {
+  constructor(config: CardAPIConfig, params?: GetProductListParams) {
     const formatted = formatParams({
-      partner_id: this.config.partnerId,
-      command: params.command || "getmoney",
+      partner_id: config.partnerId,
+      command: params?.command || "getmoney",
     });
 
+    super(config, formatted);
+  }
+
+  getRequest(): APIRequest {
     const signature = buildSignature(
       {
-        partner_id: formatted.partner_id,
-        command: formatted.command,
+        partner_id: this.params.partner_id,
+        command: this.params.command,
       },
       this.config.partnerKey,
     );
@@ -163,37 +211,44 @@ export class CardAPI {
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
       },
-      body: buildQueryString({
-        ...formatted,
+      body: this.buildBody({
+        ...this.params,
         signature,
       }),
       signature,
     };
   }
+}
 
-  // ============================================
-  // SERIAL CHECK (KIỂM TRA SERI)
-  // ============================================
+// ============================================
+// SERIAL CHECK (KIỂM TRA SERI) - REQUEST CLASS
+// ============================================
 
-  /**
-   * Build request for checking serial
-   */
-  buildCheckSerialRequest(params: CheckSerialParams): APIRequest {
+/**
+ * Check Serial Request
+ * Usage: new CheckSerialRequest(config, params).getRequest()
+ */
+export class CheckSerialRequest extends BaseRequest {
+  constructor(config: CardAPIConfig, params: CheckSerialParams) {
     validateParams(params, ["telco", "serial"]);
 
     const formatted = formatParams({
-      partner_id: this.config.partnerId,
+      partner_id: config.partnerId,
       telco: params.telco,
       serial: params.serial,
       command: params.command || "checkseri",
     });
 
+    super(config, formatted);
+  }
+
+  getRequest(): APIRequest {
     const signature = buildSignature(
       {
-        partner_id: formatted.partner_id,
-        telco: formatted.telco,
-        serial: formatted.serial,
-        command: formatted.command,
+        partner_id: this.params.partner_id,
+        telco: this.params.telco,
+        serial: this.params.serial,
+        command: this.params.command,
       },
       this.config.partnerKey,
     );
@@ -204,22 +259,25 @@ export class CardAPI {
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
       },
-      body: buildQueryString({
-        ...formatted,
+      body: this.buildBody({
+        ...this.params,
         signature,
       }),
       signature,
     };
   }
+}
 
-  // ============================================
-  // BUY CARD (MUA THẺ)
-  // ============================================
+// ============================================
+// BUY CARD (MUA THẺ) - REQUEST CLASSES
+// ============================================
 
-  /**
-   * Build request for buying card
-   */
-  buildBuyCardRequest(params: BuyCardParams): APIRequest {
+/**
+ * Buy Card Request
+ * Usage: new BuyCardRequest(config, params).getRequest()
+ */
+export class BuyCardRequest extends BaseRequest {
+  constructor(config: CardAPIConfig, params: BuyCardParams) {
     validateParams(params, [
       "serviceCode",
       "walletNumber",
@@ -229,7 +287,7 @@ export class CardAPI {
     ]);
 
     const formatted = formatParams({
-      partner_id: this.config.partnerId,
+      partner_id: config.partnerId,
       service_code: params.serviceCode,
       wallet_number: params.walletNumber,
       value: params.value,
@@ -238,15 +296,19 @@ export class CardAPI {
       command: params.command || "buycrad",
     });
 
+    super(config, formatted);
+  }
+
+  getRequest(): APIRequest {
     const signature = buildSignature(
       {
-        partner_id: formatted.partner_id,
-        service_code: formatted.service_code,
-        wallet_number: formatted.wallet_number,
-        value: formatted.value,
-        qty: formatted.qty,
-        request_id: formatted.request_id,
-        command: formatted.command,
+        partner_id: this.params.partner_id,
+        service_code: this.params.service_code,
+        wallet_number: this.params.wallet_number,
+        value: this.params.value,
+        qty: this.params.qty,
+        request_id: this.params.request_id,
+        command: this.params.command,
       },
       this.config.partnerKey,
     );
@@ -257,37 +319,42 @@ export class CardAPI {
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
       },
-      body: buildQueryString({
-        ...formatted,
+      body: this.buildBody({
+        ...this.params,
         signature,
       }),
       signature,
     };
   }
+}
 
-  /**
-   * Build request for checking card availability
-   */
-  buildCheckCardAvailabilityRequest(
-    params: CheckCardAvailabilityParams,
-  ): APIRequest {
+/**
+ * Check Card Availability Request
+ * Usage: new CheckCardAvailabilityRequest(config, params).getRequest()
+ */
+export class CheckCardAvailabilityRequest extends BaseRequest {
+  constructor(config: CardAPIConfig, params: CheckCardAvailabilityParams) {
     validateParams(params, ["serviceCode", "value", "qty"]);
 
     const formatted = formatParams({
-      partner_id: this.config.partnerId,
+      partner_id: config.partnerId,
       service_code: params.serviceCode,
       value: params.value,
       qty: params.qty,
       command: params.command || "checkbuy",
     });
 
+    super(config, formatted);
+  }
+
+  getRequest(): APIRequest {
     const signature = buildSignature(
       {
-        partner_id: formatted.partner_id,
-        service_code: formatted.service_code,
-        value: formatted.value,
-        qty: formatted.qty,
-        command: formatted.command,
+        partner_id: this.params.partner_id,
+        service_code: this.params.service_code,
+        value: this.params.value,
+        qty: this.params.qty,
+        command: this.params.command,
       },
       this.config.partnerKey,
     );
@@ -298,33 +365,40 @@ export class CardAPI {
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
       },
-      body: buildQueryString({
-        ...formatted,
+      body: this.buildBody({
+        ...this.params,
         signature,
       }),
       signature,
     };
   }
+}
 
-  /**
-   * Build request for redownloading card
-   */
-  buildRedownloadCardRequest(params: RedownloadCardParams): APIRequest {
+/**
+ * Redownload Card Request
+ * Usage: new RedownloadCardRequest(config, params).getRequest()
+ */
+export class RedownloadCardRequest extends BaseRequest {
+  constructor(config: CardAPIConfig, params: RedownloadCardParams) {
     validateParams(params, ["requestId", "orderCode"]);
 
     const formatted = formatParams({
-      partner_id: this.config.partnerId,
+      partner_id: config.partnerId,
       request_id: params.requestId,
       order_code: params.orderCode,
       command: params.command || "redownload",
     });
 
+    super(config, formatted);
+  }
+
+  getRequest(): APIRequest {
     const signature = buildSignature(
       {
-        partner_id: formatted.partner_id,
-        request_id: formatted.request_id,
-        order_code: formatted.order_code,
-        command: formatted.command,
+        partner_id: this.params.partner_id,
+        request_id: this.params.request_id,
+        order_code: this.params.order_code,
+        command: this.params.command,
       },
       this.config.partnerKey,
     );
@@ -335,26 +409,29 @@ export class CardAPI {
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
       },
-      body: buildQueryString({
-        ...formatted,
+      body: this.buildBody({
+        ...this.params,
         signature,
       }),
       signature,
     };
   }
+}
 
-  // ============================================
-  // TOPUP (NẠP TOPUP)
-  // ============================================
+// ============================================
+// TOPUP (NẠP TOPUP) - REQUEST CLASSES
+// ============================================
 
-  /**
-   * Build request for creating topup order
-   */
-  buildCreateTopupOrderRequest(params: CreateTopupOrderParams): APIRequest {
+/**
+ * Create Topup Order Request
+ * Usage: new CreateTopupOrderRequest(config, params).getRequest()
+ */
+export class CreateTopupOrderRequest extends BaseRequest {
+  constructor(config: CardAPIConfig, params: CreateTopupOrderParams) {
     validateParams(params, ["serviceCode", "amount", "qty", "requestId"]);
 
     const formatted = formatParams({
-      partner_id: this.config.partnerId,
+      partner_id: config.partnerId,
       service_code: params.serviceCode,
       amount: params.amount,
       qty: params.qty,
@@ -363,14 +440,18 @@ export class CardAPI {
       command: params.command || "topup",
     });
 
+    super(config, formatted);
+  }
+
+  getRequest(): APIRequest {
     const signature = buildSignature(
       {
-        partner_id: formatted.partner_id,
-        service_code: formatted.service_code,
-        amount: formatted.amount,
-        qty: formatted.qty,
-        request_id: formatted.request_id,
-        command: formatted.command,
+        partner_id: this.params.partner_id,
+        service_code: this.params.service_code,
+        amount: this.params.amount,
+        qty: this.params.qty,
+        request_id: this.params.request_id,
+        command: this.params.command,
       },
       this.config.partnerKey,
     );
@@ -381,33 +462,40 @@ export class CardAPI {
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
       },
-      body: buildQueryString({
-        ...formatted,
+      body: this.buildBody({
+        ...this.params,
         signature,
       }),
       signature,
     };
   }
+}
 
-  /**
-   * Build request for getting topup status
-   */
-  buildGetTopupStatusRequest(params: GetTopupStatusParams): APIRequest {
+/**
+ * Get Topup Status Request
+ * Usage: new GetTopupStatusRequest(config, params).getRequest()
+ */
+export class GetTopupStatusRequest extends BaseRequest {
+  constructor(config: CardAPIConfig, params: GetTopupStatusParams) {
     validateParams(params, ["requestId", "orderCode"]);
 
     const formatted = formatParams({
-      partner_id: this.config.partnerId,
+      partner_id: config.partnerId,
       request_id: params.requestId,
       order_code: params.orderCode,
       command: params.command || "gettopup",
     });
 
+    super(config, formatted);
+  }
+
+  getRequest(): APIRequest {
     const signature = buildSignature(
       {
-        partner_id: formatted.partner_id,
-        request_id: formatted.request_id,
-        order_code: formatted.order_code,
-        command: formatted.command,
+        partner_id: this.params.partner_id,
+        request_id: this.params.request_id,
+        order_code: this.params.order_code,
+        command: this.params.command,
       },
       this.config.partnerKey,
     );
@@ -418,101 +506,89 @@ export class CardAPI {
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
       },
-      body: buildQueryString({
-        ...formatted,
+      body: this.buildBody({
+        ...this.params,
         signature,
       }),
       signature,
-    };
-  }
-
-  /**
-   * Build request for getting product list
-   */
-  buildGetProductListRequest(params: GetProductListParams = {}): APIRequest {
-    const formatted = formatParams({
-      partner_id: this.config.partnerId,
-      command: params.command || "getlist",
-    });
-
-    const signature = buildSignature(
-      {
-        partner_id: formatted.partner_id,
-        command: formatted.command,
-      },
-      this.config.partnerKey,
-    );
-
-    return {
-      path: "/api/topup",
-      method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body: buildQueryString({
-        ...formatted,
-        signature,
-      }),
-      signature,
-    };
-  }
-
-  /**
-   * Build request for getting balance
-   */
-  buildGetBalanceRequest(params: GetBalanceParams = {}): APIRequest {
-    const formatted = formatParams({
-      partner_id: this.config.partnerId,
-      command: params.command || "getbalance",
-    });
-
-    const signature = buildSignature(
-      {
-        partner_id: formatted.partner_id,
-        command: formatted.command,
-      },
-      this.config.partnerKey,
-    );
-
-    return {
-      path: "/api/topup",
-      method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body: buildQueryString({
-        ...formatted,
-        signature,
-      }),
-      signature,
-    };
-  }
-
-  // ============================================
-  // HELPER METHODS
-  // ============================================
-
-  /**
-   * Get the appropriate domain for an operation
-   */
-  getDomain(operation: "post" | "buy" | "topup" = "post"): string {
-    return resolveDomain(this.config, operation);
-  }
-
-  /**
-   * Get all configured domains
-   */
-  getDomains(): {
-    post: string;
-    buy: string;
-    topup: string;
-  } {
-    return {
-      post: resolveDomain(this.config, "post"),
-      buy: resolveDomain(this.config, "buy"),
-      topup: resolveDomain(this.config, "topup"),
     };
   }
 }
 
-export default CardAPI;
+/**
+ * Get Product List Request
+ * Usage: new GetProductListRequest(config).getRequest()
+ */
+export class GetProductListRequest extends BaseRequest {
+  constructor(config: CardAPIConfig, params?: GetProductListParams) {
+    const formatted = formatParams({
+      partner_id: config.partnerId,
+      command: params?.command || "getlist",
+    });
+
+    super(config, formatted);
+  }
+
+  getRequest(): APIRequest {
+    const signature = buildSignature(
+      {
+        partner_id: this.params.partner_id,
+        command: this.params.command,
+      },
+      this.config.partnerKey,
+    );
+
+    return {
+      path: "/api/topup",
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: this.buildBody({
+        ...this.params,
+        signature,
+      }),
+      signature,
+    };
+  }
+}
+
+/**
+ * Get Balance Request
+ * Usage: new GetBalanceRequest(config).getRequest()
+ */
+export class GetBalanceRequest extends BaseRequest {
+  constructor(config: CardAPIConfig, params?: GetBalanceParams) {
+    const formatted = formatParams({
+      partner_id: config.partnerId,
+      command: params?.command || "getbalance",
+    });
+
+    super(config, formatted);
+  }
+
+  getRequest(): APIRequest {
+    const signature = buildSignature(
+      {
+        partner_id: this.params.partner_id,
+        command: this.params.command,
+      },
+      this.config.partnerKey,
+    );
+
+    return {
+      path: "/api/topup",
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: this.buildBody({
+        ...this.params,
+        signature,
+      }),
+      signature,
+    };
+  }
+}
+
+export default CardAPIConfig;
