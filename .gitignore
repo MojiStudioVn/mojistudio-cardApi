@@ -31,3 +31,9 @@ build/
 # OS
 .DS_Store
 Thumbs.db
+
+# Development files (không cần push lên Git)
+card.txt
+examples.js
+test/
+tests/
