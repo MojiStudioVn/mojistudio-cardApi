@@ -1,0 +1,45 @@
+{
+  "name": "mojistudio-card-api",
+  "version": "1.0.0",
+  "description": "Card Partner API Client - Thư viện hỗ trợ các chức năng đổi thẻ, kiểm tra seri, mua thẻ, và nạp topup",
+  "main": "index.js",
+  "author": "Your Name",
+  "license": "MIT",
+  "keywords": [
+    "card-api",
+    "card-exchange",
+    "topup",
+    "api-client",
+    "payment",
+    "vietnam",
+    "telco"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/mojistudio-cardApi.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yourusername/mojistudio-cardApi/issues"
+  },
+  "homepage": "https://github.com/yourusername/mojistudio-cardApi#readme",
+  "engines": {
+    "node": ">=10.0.0"
+  },
+  "files": [
+    "index.js",
+    "cardApi.js",
+    "config.js",
+    ".env.example",
+    "README.md",
+    "card-api.md"
+  ],
+  "dependencies": {
+    "dotenv": "^10.0.0",
+    "mojistudio-card-api": "^1.0.0"
+  },
+  "scripts": {
+    "test": "node examples.js",
+    "setup": "cp .env.example .env && echo 'Created .env file. Please fill in your credentials.'",
+    "prepublishOnly": "echo 'Publishing to npm...'"
+  }
+}
